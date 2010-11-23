@@ -227,7 +227,7 @@ int rhrd__leap_year(long year) {
 /* Check if the year, month, and day given are a valid date
  * in the Gregorian calendar, filling in the appropriate
  * fields in the rhrd_t and returning 1 if so.  If the fields
- * given are not a valid date, return 0. 
+ * given are not a valid date, return 0.
  * This also handles wrap around if the month or day is negative. */
 int rhrd__valid_civil(rhrd_t *d, long year, long month, long day, int overlimit_raise) {
   if (month < 0 && month >= -12) {
@@ -265,7 +265,7 @@ int rhrd__valid_civil(rhrd_t *d, long year, long month, long day, int overlimit_
       rb_raise(rb_eRangeError, "date out of range: year = %li, month = %li, day = %li", year, month, day);
     }
     return 0;
-  } 
+  }
 
   d->year = year;
   d->month = (unsigned char)month;
@@ -399,7 +399,7 @@ long rhrd__broadcast_to_jd(long bwyear, long bweek, long bwday) {
 /* Convert the given julian date to a cwday (range: [1-7]). */
 long rhrd__jd_to_cwday(long jd) {
   long day;
-  day = (jd + 1) % 7; 
+  day = (jd + 1) % 7;
   if (day <= 0) {
     day += 7;
   }
@@ -597,7 +597,7 @@ int rhrd__valid_ordinal(rhrd_t *d, long year, long yday, int overlimit_raise) {
       rb_raise(rb_eRangeError, "date out of range");
     }
     return 0;
-  } 
+  }
 
   d->year = year;
   d->month = (unsigned char)month;
@@ -1175,7 +1175,7 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
               year_only4 = 1;\
             }\
           }
-          RHR_PARSE_year_only4 
+          RHR_PARSE_year_only4
           if (sscanf(str + pos, year_only4 ? "%4ld%n" : "%ld%n", &cwyear, &scan_len) != 1) {
             return Qnil;
           }
@@ -1365,7 +1365,7 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
             return Qnil;\
           }\
           state |= RHRR_YEAR_SET + RHRR_CENTURY_SET;
-          RHR_PARSE_year_only4 
+          RHR_PARSE_year_only4
           RHR_PARSE_Y
           break;
         case 'z':
@@ -1399,7 +1399,7 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
           RHR_PARSE_sep(':')
           RHR_PARSE_S
           RHR_PARSE_sep(' ')
-          RHR_PARSE_year_only4 
+          RHR_PARSE_year_only4
           RHR_PARSE_Y
           break;
         case 'x':
@@ -1444,7 +1444,7 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
           RHR_PARSE_sep('-')
           RHR_PARSE_b
           RHR_PARSE_sep('-')
-          RHR_PARSE_year_only4 
+          RHR_PARSE_year_only4
           RHR_PARSE_Y
           break;
         case '+':
@@ -1462,7 +1462,7 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
           RHR_PARSE_sep(' ')
           RHR_PARSE_Z
           RHR_PARSE_sep(' ')
-          RHR_PARSE_year_only4 
+          RHR_PARSE_year_only4
           RHR_PARSE_Y
           break;
         default:
@@ -1487,19 +1487,19 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
       year += century * 100;
     }
     rb_hash_aset(hash, rhrd_sym_year, LONG2NUM(year));
-  } 
+  }
   if(state & RHRR_MONTH_SET) {
     rb_hash_aset(hash, rhrd_sym_mon, LONG2NUM(month));
-  } 
+  }
   if(state & RHRR_DAY_SET) {
     rb_hash_aset(hash, rhrd_sym_mday, LONG2NUM(day));
-  } 
+  }
   if(state & RHRR_YDAY_SET) {
     rb_hash_aset(hash, rhrd_sym_yday, LONG2NUM(yday));
-  } 
+  }
   if(state & RHRR_WDAY_SET) {
     rb_hash_aset(hash, rhrd_sym_wday, LONG2NUM(wday));
-  } 
+  }
   if(state & RHRR_CWYEAR_SET) {
     if (state & RHRR_CENTURY_SET && cwyear < 100) {
       cwyear += century * 100;
@@ -1536,37 +1536,37 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
       }
     }
     rb_hash_aset(hash, rhrd_sym_hour, LONG2NUM(hour));
-  } 
+  }
   if(state & RHRR_MINUTE_SET) {
     rb_hash_aset(hash, rhrd_sym_min, LONG2NUM(minute));
-  } 
+  }
   if(state & RHRR_SECOND_SET) {
     rb_hash_aset(hash, rhrd_sym_sec, LONG2NUM(second));
-  } 
+  }
   if(state & RHRR_SEC_FRACTION_SET) {
     rb_hash_aset(hash, rhrd_sym_sec_fraction, rb_float_new(sec_fraction));
-  } 
+  }
   if(state & RHRR_UNIX_SET) {
     rb_hash_aset(hash, rhrd_sym_seconds, LL2NUM(seconds));
-  } 
+  }
   if(state & RHRR_UNIXM_SET) {
     rb_hash_aset(hash, rhrd_sym_seconds, LL2NUM(milliseconds/1000));
     rb_hash_aset(hash, rhrd_sym_sec_fraction, rb_float_new((double)(milliseconds % 1000)/1000.0));
-  } 
+  }
   if(RTEST(zone)) {
     rb_hash_aset(hash, rhrd_sym_zone, zone);
     zone = rhrd_s_zone_to_diff(rstr, zone);
     if(RTEST(zone)) {
       rb_hash_aset(hash, rhrd_sym_offset, zone);
     }
-  } 
+  }
   if(state & RHRR_WNUM0_SET) {
     rb_hash_aset(hash, rhrd_sym_wnum0, LONG2NUM(wnum0));
-  } 
+  }
   if(state & RHRR_WNUM1_SET) {
     rb_hash_aset(hash, rhrd_sym_wnum1, LONG2NUM(wnum1));
-  } 
-#ifdef RUBY19  
+  }
+#ifdef RUBY19
   if(pos < len) {
     rb_hash_aset(hash, rhrd_sym_leftover, rb_str_new(str + pos, len - pos));
   }
@@ -2181,10 +2181,10 @@ static VALUE rhrd_s_valid_ordinal_q(int argc, VALUE *argv, VALUE klass) {
  * Returns an +Integer+ representing the number of seconds that the given
  * zone string is offset from UTC.  For example, 'PDT' is Pacific Daylight Time, which
  * 7 hours before UTC, so <tt>Date.zone_to_diff('PDT')</tt> will return <tt>-25200</tt>.
- * 
+ *
  * In addition to handling time zone names, this also handles time zones specified
  * numerically, such as <tt>"+08:00"</tt> and <tt>"-0800"</tt>.
- * 
+ *
  * If the time zone is not recognized, returns 0.
  *
  * On ruby 1.9, this method is private.
@@ -2197,7 +2197,7 @@ VALUE rhrd_s_zone_to_diff(VALUE klass, VALUE str) {
 
   str = rb_funcall(str, rhrd_id_downcase, 0);
   if(RTEST(rb_funcall(str, rhrd_id_sub_b, 2, rhrd_zone_dst_re, rhrd_empty_string))) {
-    if (!RTEST(rb_reg_nth_match(1, rb_gv_get("$~")))) { 
+    if (!RTEST(rb_reg_nth_match(1, rb_gv_get("$~")))) {
       offset += RHR_SECONDS_PER_HOUR;
     }
   }
@@ -2207,7 +2207,7 @@ VALUE rhrd_s_zone_to_diff(VALUE klass, VALUE str) {
   }
 
   if(RTEST(rb_funcall(str, rhrd_id_sub_b, 2, rhrd_zone_sign_re, rhrd_empty_string))) {
-    if (RTEST(rb_reg_nth_match(1, rb_gv_get("$~")))) { 
+    if (RTEST(rb_reg_nth_match(1, rb_gv_get("$~")))) {
       offset = -1;
     } else {
       offset = 1;
@@ -2282,7 +2282,7 @@ static VALUE rhrd__dump(VALUE self, VALUE limit) {
  *   asctime() -> String
  *
  * Returns a string representation of the receiver.  Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).asctime
  *   # => "Fri Jan  2 00:00:00 2009"
  */
@@ -2295,7 +2295,7 @@ static VALUE rhrd_asctime(VALUE self) {
   RHR_FILL_JD(d)
 
   s = rb_str_buf_new(128);
-  len = snprintf(RSTRING_PTR(s), 128, "%s %s %2i 00:00:00 %04li", 
+  len = snprintf(RSTRING_PTR(s), 128, "%s %s %2i 00:00:00 %04li",
         rhrd__abbr_day_names[rhrd__jd_to_wday(d->jd)],
         rhrd__abbr_month_names[d->month],
         (int)d->day,
@@ -2386,7 +2386,7 @@ static VALUE rhrd_cweek(VALUE self) {
  *   Date.civil(2010, 1, 2).bweek
  *   # => 53
  */
-static VALUE rhrd_cweek(VALUE self) {
+static VALUE rhrd_bweek(VALUE self) {
   rhrd_t *d;
   rhrd_t n;
   RHR_CACHED_IV(self, rhrd_id_bweek)
@@ -2426,7 +2426,7 @@ static VALUE rhrd_cwyear(VALUE self) {
  *   bwyear() -> Integer
  *
  * Returns the commercial week year as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).bwyear
  *   # => 2009
  *   Date.civil(2010, 1, 2).bwyear
@@ -2449,7 +2449,7 @@ static VALUE rhrd_bwyear(VALUE self) {
  *   day() -> Integer
  *
  * Returns the day of the month as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).day
  *   # => 2
  */
@@ -2474,7 +2474,7 @@ static VALUE rhrd_day_fraction(VALUE self) {
  *
  * Equivalent to calling +step+ with the +target+ as the first argument
  * and <tt>-1</tt> as the second argument. Returns self.
- * 
+ *
  *   Date.civil(2009, 1, 2).downto(Date.civil(2009, 1, 1)) do |date|
  *     puts date
  *   end
@@ -2667,7 +2667,7 @@ static VALUE rhrd_mjd(VALUE self) {
  *   month() -> Integer
  *
  * Returns the number of the month as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).month
  *   # => 1
  */
@@ -2682,7 +2682,7 @@ static VALUE rhrd_month(VALUE self) {
  *   next() -> Date
  *
  * Returns the +Date+ after the receiver's date:
- * 
+ *
  *   Date.civil(2009, 1, 2).next
  *   # => #<Date 2009-01-03>
  */
@@ -2732,7 +2732,7 @@ static VALUE rhrd_start(VALUE self) {
  * +step+. It +target+ is less than receiver and +step+ is nonnegative, or
  * +target+ is greater than receiver and +step+ is nonpositive, does not
  * yield.
- * 
+ *
  *   Date.civil(2009, 1, 2).step(Date.civil(2009, 1, 6), 2) do |date|
  *     puts date
  *   end
@@ -2841,11 +2841,11 @@ static VALUE rhrd_step(int argc, VALUE *argv, VALUE self) {
  * %j :: The day of the year (e.g. 002)
  * %k :: The hour of the day in 24 hour format, with a leading space if necessary (e.g. 13)
  * %l :: The hour of the day in 12 hour format, with a leading space if necessary (e.g. 13)
- * %L :: The number of milliseconds in the fractional second, with leading zeros if necessary (e.g. 079) 
+ * %L :: The number of milliseconds in the fractional second, with leading zeros if necessary (e.g. 079)
  * %m :: The month of the year (e.g. 01)
  * %M :: The minute of the hour (e.g. 29)
  * %n :: A newline (e.g. "\n")
- * %N :: The number of nanoseconds in the fractional second, with leading zeros if necessary (e.g. 079013023) 
+ * %N :: The number of nanoseconds in the fractional second, with leading zeros if necessary (e.g. 079013023)
  * %p :: The meridian indicator, upcased (e.g. PM)
  * %P :: The meridian indicator, downcased (e.g. pm)
  * %Q :: The number of milliseconds since the unix epoch (e.g. 1230902979079)
@@ -2903,7 +2903,7 @@ static VALUE rhrd_strftime(int argc, VALUE *argv, VALUE self) {
  *   to_s() -> String
  *
  * Returns the receiver as an ISO8601 formatted string.
- * 
+ *
  *   Date.civil(2009, 1, 2).to_s
  *   # => "2009-01-02"
  */
@@ -2929,7 +2929,7 @@ static VALUE rhrd_to_s(VALUE self) {
  *
  * Equivalent to calling +step+ with the +target+ as the first argument.
  * Returns self.
- * 
+ *
  *   Date.civil(2009, 1, 1).upto(Date.civil(2009, 1, 2)) do |date|
  *     puts date
  *   end
@@ -2948,7 +2948,7 @@ static VALUE rhrd_upto(VALUE self, VALUE other) {
  *
  * Returns the day of the week as an +Integer+, where Sunday
  * is 0 and Saturday is 6. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).wday
  *   # => 5
  */
@@ -2965,7 +2965,7 @@ static VALUE rhrd_wday(VALUE self) {
  * Returns the day of the year as an +Integer+, where January
  * 1st is 1 and December 31 is 365 (or 366 if the year is a leap
  * year). Example:
- * 
+ *
  *   Date.civil(2009, 2, 2).yday
  *   # => 33
  */
@@ -2980,7 +2980,7 @@ static VALUE rhrd_yday(VALUE self) {
  *   year() -> Integer
  *
  * Returns the year as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).year
  *   # => 2009
  */
@@ -2999,7 +2999,7 @@ static VALUE rhrd_year(VALUE self) {
  * Returns a +Date+ that is +n+ months after the receiver. +n+
  * can be negative, in which case it returns a +Date+ before
  * the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2) >> 2
  *   # => #<Date 2009-01-02>
  *   Date.civil(2009, 1, 2) >> -2
@@ -3015,7 +3015,7 @@ static VALUE rhrd_op_right_shift(VALUE self, VALUE other) {
  * Returns a +Date+ that is +n+ months before the receiver. +n+
  * can be negative, in which case it returns a +Date+ after
  * the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2) << 2
  *   # => #<Date 2008-11-02>
  *   Date.civil(2009, 1, 2) << -2
@@ -3031,7 +3031,7 @@ static VALUE rhrd_op_left_shift(VALUE self, VALUE other) {
  * Returns a +Date+ that is +n+ days after the receiver. +n+
  * can be negative, in which case it returns a +Date+ before
  * the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2) + 2
  *   # => #<Date 2009-01-04>
  *   Date.civil(2009, 1, 2) + -2
@@ -3058,9 +3058,9 @@ static VALUE rhrd_op_plus(VALUE self, VALUE other) {
  * between the current date and the argument as a +Float+, and
  * considers the receiver to be in the same time zone as the
  * argument.
- * 
+ *
  * Other types of arguments raise a +TypeError+.
- * 
+ *
  *   Date.civil(2009, 1, 2) - 2
  *   # => #<Date 2008-12-31>
  *   Date.civil(2009, 1, 2) - Date.civil(2009, 1, 1)
@@ -3104,7 +3104,7 @@ static VALUE rhrd_op_minus(VALUE self, VALUE other) {
  *
  * If +other+ is a +Numeric+, convert it to an +Integer+ and return
  * +true+ if it is equal to the receiver's julian date, or +false+
- * otherwise. 
+ * otherwise.
  */
 static VALUE rhrd_op_relationship(VALUE self, VALUE other) {
   rhrd_t *d, *o;
@@ -3139,10 +3139,10 @@ static VALUE rhrd_op_relationship(VALUE self, VALUE other) {
  * julian date as the receiver and no fractional part, -1 if +other+ has a julian date
  * less than the receiver's, and 1 if +other+ has a julian date
  * greater than the receiver's or a julian date the same as the
- * receiver's and a fractional part. 
+ * receiver's and a fractional part.
  *
  * If +other+ is a +Numeric+, convert it to an integer and compare
- * it to the receiver's julian date. 
+ * it to the receiver's julian date.
  *
  * For an unrecognized type, return +nil+.
  */
@@ -3225,7 +3225,7 @@ VALUE rhrd__day_q(VALUE self, long day) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.httpdate("Fri, 02 Jan 2009 00:00:00 GMT")
  *   # => #<Date 2009-01-02>
  */
@@ -3259,7 +3259,7 @@ static VALUE rhrd_s_httpdate(int argc, VALUE *argv, VALUE klass) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.iso8601("2009-01-02")
  *   # => #<Date 2009-01-02>
  */
@@ -3293,7 +3293,7 @@ static VALUE rhrd_s_iso8601(int argc, VALUE *argv, VALUE klass) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.iso8601("H21.01.02")
  *   # => #<Date 2009-01-02>
  */
@@ -3327,7 +3327,7 @@ static VALUE rhrd_s_jisx0301(int argc, VALUE *argv, VALUE klass) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.rfc2822("Fri, 2 Jan 2009 00:00:00 +0000")
  *   # => #<Date 2009-01-02>
  */
@@ -3361,7 +3361,7 @@ static VALUE rhrd_s_rfc2822(int argc, VALUE *argv, VALUE klass) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.rfc3339("2009-01-02T00:00:00+00:00")
  *   # => #<Date 2009-01-02>
  */
@@ -3395,7 +3395,7 @@ static VALUE rhrd_s_rfc3339(int argc, VALUE *argv, VALUE klass) {
  * or the date it represents is not a valid date.
  * Ignores the 2nd argument.
  * Example:
- * 
+ *
  *   Date.xmlschema("2009-01-02")
  *   # => #<Date 2009-01-02>
  */
@@ -3424,7 +3424,7 @@ static VALUE rhrd_s_xmlschema(int argc, VALUE *argv, VALUE klass) {
  *   httpdate() -> String
  *
  * Returns the receiver as a +String+ in HTTP format. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).httpdate
  *   # => "Fri, 02 Jan 2009 00:00:00 GMT"
  */
@@ -3437,7 +3437,7 @@ static VALUE rhrd_httpdate(VALUE self) {
   RHR_FILL_JD(d)
 
   s = rb_str_buf_new(128);
-  len = snprintf(RSTRING_PTR(s), 128, "%s, %02i %s %04li 00:00:00 GMT", 
+  len = snprintf(RSTRING_PTR(s), 128, "%s, %02i %s %04li 00:00:00 GMT",
         rhrd__abbr_day_names[rhrd__jd_to_wday(d->jd)],
         (int)d->day,
         rhrd__abbr_month_names[d->month],
@@ -3454,7 +3454,7 @@ static VALUE rhrd_httpdate(VALUE self) {
  *   jisx0301() -> String
  *
  * Returns the receiver as a +String+ in JIS X 0301 format. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).jisx0301
  *   # => "H21.01.02"
  */
@@ -3500,7 +3500,7 @@ static VALUE rhrd_jisx0301(VALUE self) {
  *
  * Returns a +Date+ +n+ days after the receiver.  If +n+ is negative,
  * returns a +Date+ before the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).next_day
  *   # => #<Date 2009-01-03>
  *   Date.civil(2009, 1, 2).next_day(2)
@@ -3530,7 +3530,7 @@ static VALUE rhrd_next_day(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a +Date+ +n+ months after the receiver.  If +n+ is negative,
  * returns a +Date+ before the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).next_month
  *   # => #<Date 2009-02-02>
  *   Date.civil(2009, 1, 2).next_month(2)
@@ -3560,7 +3560,7 @@ static VALUE rhrd_next_month(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a +Date+ +n+ years after the receiver.  If +n+ is negative,
  * returns a +Date+ before the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).next_year
  *   # => #<Date 2010-01-02>
  *   Date.civil(2009, 1, 2).next_year(2)
@@ -3590,7 +3590,7 @@ static VALUE rhrd_next_year(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a +Date+ +n+ days before the receiver.  If +n+ is negative,
  * returns a +Date+ after the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).prev_day
  *   # => #<Date 2009-01-01>
  *   Date.civil(2009, 1, 2).prev_day(2)
@@ -3620,7 +3620,7 @@ static VALUE rhrd_prev_day(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a +Date+ +n+ months before the receiver.  If +n+ is negative,
  * returns a +Date+ after the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).prev_month
  *   # => #<Date 2008-12-02>
  *   Date.civil(2009, 1, 2).prev_month(2)
@@ -3650,7 +3650,7 @@ static VALUE rhrd_prev_month(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a +Date+ +n+ years before the receiver.  If +n+ is negative,
  * returns a +Date+ after the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).prev_year
  *   # => #<Date 2008-01-02>
  *   Date.civil(2009, 1, 2).prev_year(2)
@@ -3679,7 +3679,7 @@ static VALUE rhrd_prev_year(int argc, VALUE *argv, VALUE self) {
  *   rfc2822() -> String
  *
  * Returns the receiver as a +String+ in RFC2822 format. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).rfc2822
  *   # => "Fri, 2 Jan 2009 00:00:00 +0000"
  */
@@ -3692,7 +3692,7 @@ static VALUE rhrd_rfc2822(VALUE self) {
   RHR_FILL_JD(d)
 
   s = rb_str_buf_new(128);
-  len = snprintf(RSTRING_PTR(s), 128, "%s, %i %s %04li 00:00:00 +0000", 
+  len = snprintf(RSTRING_PTR(s), 128, "%s, %i %s %04li 00:00:00 +0000",
         rhrd__abbr_day_names[rhrd__jd_to_wday(d->jd)],
         (int)d->day,
         rhrd__abbr_month_names[d->month],
@@ -3709,7 +3709,7 @@ static VALUE rhrd_rfc2822(VALUE self) {
  *   rfc3339() -> String
  *
  * Returns the receiver as a +String+ in RFC3339 format. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).rfc3339
  *   # => "2009-01-02T00:00:00+00:00"
  */
@@ -3734,7 +3734,7 @@ static VALUE rhrd_rfc3339(VALUE self) {
  *   to_datetime() -> DateTime
  *
  * Returns a +DateTime+ equal to the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).to_datetime
  *   # => #<DateTime 2009-01-02T00:00:00+00:00>
  */
@@ -3764,7 +3764,7 @@ static VALUE rhrd_to_datetime(VALUE self) {
  *
  * Returns a +Time+ in local time with the same year, month, and day
  * as the receiver.
- * 
+ *
  *   Date.civil(2009, 1, 2).to_time
  *   # => 2009-01-02 00:00:00 -0800
  */
@@ -3781,7 +3781,7 @@ static VALUE rhrd_to_time(VALUE self) {
  *
  * Returns a +Date+ with the same year, month, and day
  * as the receiver in local time.
- * 
+ *
  *   Time.local(2009, 1, 2).to_date
  *   # => #<Date 2009-01-02>
  */
@@ -3800,7 +3800,7 @@ static VALUE rhrd_time_to_date(VALUE self) {
  *   to_time() -> Time
  *
  * Returns a copy of the receiver in local time.
- * 
+ *
  *   Time.local(2009, 1, 2).to_time
  *   # => 2009-01-02 00:00:00 -0800
  *   Time.local(2009, 1, 2).getutc.to_time
@@ -4016,7 +4016,7 @@ static VALUE rhrd_s_broadcast_to_jd(int argc, VALUE *argv, VALUE klass) {
 static VALUE rhrd_s_day_fraction_to_time(VALUE klass, VALUE rf) {
   double f;
   int h, m, s;
- 
+
   f = NUM2DBL(rf) * 24;
   h = (int)floor(f);
   f = (f - h) * 60;
