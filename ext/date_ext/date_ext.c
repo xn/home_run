@@ -42,6 +42,9 @@ ID rhrd_id__parse;
 ID rhrd_id_cwday;
 ID rhrd_id_cweek;
 ID rhrd_id_cwyear;
+ID rhrd_id_bwday;
+ID rhrd_id_bweek;
+ID rhrd_id_bwyear;
 ID rhrd_id_downcase;
 ID rhrd_id_getlocal;
 ID rhrd_id_hash;
@@ -77,6 +80,9 @@ ID rhrd_id__xmlschema;
 VALUE rhrd_sym_cwday;
 VALUE rhrd_sym_cweek;
 VALUE rhrd_sym_cwyear;
+VALUE rhrd_sym_bwday;
+VALUE rhrd_sym_bweek;
+VALUE rhrd_sym_bwyear;
 VALUE rhrd_sym_hour;
 #ifdef RUBY19
 VALUE rhrd_sym_leftover;
@@ -377,10 +383,33 @@ long rhrd__commercial_to_jd(long cwyear, long cweek, long cwday) {
   return n.jd - rhrd__mod(n.jd, 7) + 7 * (cweek - 1) + (cwday - 1);
 }
 
+/* Convert the given bwyear, bweek, and bwday arguments to
+ * a julian date. */
+long rhrd__broadcast_to_jd(long bwyear, long bweek, long bwday) {
+  rhrd_t n;
+  memset(&n, 0, sizeof(rhrd_t));
+
+  n.year = bwyear;
+  n.month = 1;
+  n.day = 1;
+  rhrd__civil_to_jd(&n);
+  return n.jd - rhrd__mod(n.jd, 7) + 7 + (bwday - 1);
+}
+
 /* Convert the given julian date to a cwday (range: [1-7]). */
 long rhrd__jd_to_cwday(long jd) {
   long day;
   day = (jd + 1) % 7; 
+  if (day <= 0) {
+    day += 7;
+  }
+  return day;
+}
+
+/* Convert the given julian date to a cwday (range: [1-7]). */
+long rhrd__jd_to_bwday(long jd) {
+  long day;
+  day = (jd + 1) % 7;
   if (day <= 0) {
     day += 7;
   }
@@ -413,6 +442,25 @@ void rhrd__fill_commercial(rhrd_t *d) {
   d->day = (unsigned char)rhrd__jd_to_cwday(d->jd);
 }
 
+/* Fill the given rhrd_t with the commercial week
+ * information specified by its julian date.
+ * Abuses the year, month, and day fields to store
+ * bwyear, bweek, and bwday, so it should not be
+ * used on a ruby Date object that has its civil
+ * date filled in. */
+void rhrd__fill_broadcast(rhrd_t *d) {
+  long a;
+  rhrd_t n;
+  memset(&n, 0, sizeof(rhrd_t));
+
+  n.jd = d->jd - 3;
+  rhrd__jd_to_civil(&n);
+  a = n.year;
+  d->year = d->jd >= rhrd__broadcast_to_jd(a + 1, 1, 1) ? a + 1 : a;
+  d->month = (unsigned char)(1 + (d->jd - rhrd__broadcast_to_jd(d->year, 1, 1)) / 7);
+  d->day = (unsigned char)rhrd__jd_to_bwday(d->jd);
+}
+
 /* Fill in the jd field for the given rhrd_t using the cwyear, cweek,
  * and cwday arguments, if the date is valid, and return 1.  If the
  * date is not valid, return 0.  This also handles wrap around if
@@ -443,6 +491,51 @@ int rhrd__valid_commercial(rhrd_t *d, long cwyear, long cweek, long cwday, int o
   n.jd = rhrd__commercial_to_jd(cwyear, cweek, cwday);
   rhrd__fill_commercial(&n);
   if(cwyear != n.year || cweek != n.month || cwday != n.day) {
+    return 0;
+  }
+
+  if ((n.jd > RHR_JD_MAX) || (n.jd < RHR_JD_MIN)) {
+    if (overlimit_raise == RHR_OVERLIMIT_RAISE) {
+      rb_raise(rb_eRangeError, "date out of range");
+    }
+    return 0;
+  }
+
+  d->jd = n.jd;
+  d->flags = RHR_HAVE_JD;
+  return 1;
+}
+
+/* Fill in the jd field for the given rhrd_t using the bwyear, bweek,
+ * and bwday arguments, if the date is valid, and return 1.  If the
+ * date is not valid, return 0.  This also handles wrap around if
+ * the bweek or bwday arguments is negative. */
+int rhrd__valid_broadcast(rhrd_t *d, long bwyear, long bweek, long bwday, int overlimit_raise) {
+  rhrd_t n;
+  memset(&n, 0, sizeof(rhrd_t));
+
+  if (bwday < 0) {
+    if (bwday < -8) {
+      return 0;
+    }
+    bwday += 8;
+  }
+  if (bweek < 0) {
+    if (bweek < -53) {
+      return 0;
+    }
+    n.jd = rhrd__broadcast_to_jd(bwyear + 1, 1, 1) + bweek * 7;
+    rhrd__fill_broadcast(&n);
+    if (n.year != bwyear) {
+      return 0;
+    }
+    bweek = n.month;
+    memset(&n, 0, sizeof(rhrd_t));
+  }
+
+  n.jd = rhrd__broadcast_to_jd(bwyear, bweek, bwday);
+  rhrd__fill_broadcast(&n);
+  if(bwyear != n.year || bweek != n.month || bwday != n.day) {
     return 0;
   }
 
@@ -611,7 +704,10 @@ int rhrd__fill_from_hash(rhrd_t *d, VALUE hash) {
   long cwyear = 0;
   long cweek = 0;
   long cwday = 0;
-  VALUE ryear, rmonth, rday, ryday, rwday, rcwyear, rcweek, rcwday, runix, rwnum0, rwnum1;
+  long bwyear = 0;
+  long bweek = 0;
+  long bwday = 0;
+  VALUE ryear, rmonth, rday, ryday, rwday, rcwyear, rcweek, rcwday, rbwyear, rbweek, rbwday, runix, rwnum0, rwnum1;
 
   if (!RTEST(hash)) {
     return -1;
@@ -631,6 +727,9 @@ int rhrd__fill_from_hash(rhrd_t *d, VALUE hash) {
   rcwyear = rb_hash_aref(hash, rhrd_sym_cwyear);
   rcweek = rb_hash_aref(hash, rhrd_sym_cweek);
   rcwday = rb_hash_aref(hash, rhrd_sym_cwday);
+  rbwyear = rb_hash_aref(hash, rhrd_sym_bwyear);
+  rbweek = rb_hash_aref(hash, rhrd_sym_bweek);
+  rbwday = rb_hash_aref(hash, rhrd_sym_bwday);
   rwnum0 = rb_hash_aref(hash, rhrd_sym_wnum0);
   rwnum1 = rb_hash_aref(hash, rhrd_sym_wnum1);
 
@@ -693,6 +792,18 @@ int rhrd__fill_from_hash(rhrd_t *d, VALUE hash) {
     cwyear = rhrd__current_year();
     cweek = 1;
     cwday = NUM2LONG(rcwday);
+  } else if (RTEST(rbwyear)) {
+    bwyear = NUM2LONG(rbwyear);
+    bweek = RTEST(rbweek) ? NUM2LONG(rbweek) : 1;
+    bwday = RTEST(rbwday) ? NUM2LONG(rbwday) : 1;
+  } else if (RTEST(rbweek)) {
+    bwyear = rhrd__current_year();
+    bweek = NUM2LONG(rbweek);
+    bwday = RTEST(rbwday) ? NUM2LONG(rbwday) : 1;
+  } else if (RTEST(rbwday)) {
+    bwyear = rhrd__current_year();
+    bweek = 1;
+    bwday = NUM2LONG(rbwday);
   } else if (RTEST(rwday)) {
     wday = NUM2LONG(rwday);
     rhrd__today(d);
@@ -707,6 +818,9 @@ int rhrd__fill_from_hash(rhrd_t *d, VALUE hash) {
     return 0;
   }
   if (cweek && cwday && rhrd__valid_commercial(d, cwyear, cweek, cwday, RHR_OVERLIMIT_RAISE)) {
+    return 0;
+  }
+  if (bweek && bwday && rhrd__valid_broadcast(d, bwyear, bweek, bwday, RHR_OVERLIMIT_RAISE)) {
     return 0;
   }
   if (rhrd__valid_civil(d, year, month, day, RHR_OVERLIMIT_RAISE)) {
@@ -924,6 +1038,9 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
   long cwyear = 0;
   long cweek = 0;
   long cwday = 0;
+  long bwyear = 0;
+  long bweek = 0;
+  long bwday = 0;
   long century = 0;
   long hour = 0;
   long minute = 0;
@@ -1388,13 +1505,25 @@ VALUE rhrd__strptime(VALUE rstr, const char *fmt_str, long fmt_len) {
       cwyear += century * 100;
     }
     rb_hash_aset(hash, rhrd_sym_cwyear, LONG2NUM(cwyear));
-  } 
+  }
   if(state & RHRR_CWEEK_SET) {
     rb_hash_aset(hash, rhrd_sym_cweek, LONG2NUM(cweek));
-  } 
+  }
   if(state & RHRR_CWDAY_SET) {
     rb_hash_aset(hash, rhrd_sym_cwday, LONG2NUM(cwday));
-  } 
+  }
+  if(state & RHRR_BWYEAR_SET) {
+    if (state & RHRR_CENTURY_SET && bwyear < 100) {
+      bwyear += century * 100;
+    }
+    rb_hash_aset(hash, rhrd_sym_bwyear, LONG2NUM(bwyear));
+  }
+  if(state & RHRR_BWEEK_SET) {
+    rb_hash_aset(hash, rhrd_sym_bweek, LONG2NUM(bweek));
+  }
+  if(state & RHRR_BWDAY_SET) {
+    rb_hash_aset(hash, rhrd_sym_bwday, LONG2NUM(bwday));
+  }
   if(state & RHRR_HOUR_SET) {
     if (state & RHRR_MERIDIAN_SET) {
       if (meridian) {
@@ -1450,6 +1579,13 @@ void rhrd__set_cw_ivs(VALUE self, rhrd_t *d) {
   rb_ivar_set(self, rhrd_id_cwyear, LONG2NUM(d->year));
   rb_ivar_set(self, rhrd_id_cweek, LONG2NUM(d->month));
   rb_ivar_set(self, rhrd_id_cwday, LONG2NUM(d->day));
+}
+
+/* Set the broadcast week cached instance variables. */
+void rhrd__set_bw_ivs(VALUE self, rhrd_t *d) {
+  rb_ivar_set(self, rhrd_id_bwyear, LONG2NUM(d->year));
+  rb_ivar_set(self, rhrd_id_bweek, LONG2NUM(d->month));
+  rb_ivar_set(self, rhrd_id_bwday, LONG2NUM(d->day));
 }
 
 /* Ruby class methods */
@@ -1599,6 +1735,55 @@ static VALUE rhrd_s_commercial(int argc, VALUE *argv, VALUE klass) {
 
   if(!rhrd__valid_commercial(d, cwyear, cweek, cwday, RHR_OVERLIMIT_RAISE)) {
     rb_raise(rb_eArgError, "invalid date (cwyear: %li, cweek: %li, cwday: %li)", cwyear, cweek, cwday);
+  }
+  return rd;
+}
+
+/* call-seq:
+ *   broadcast() -> Date <br />
+ *   broadcast(bwyear, bweek=41, bwday=5, sg=nil) -> Date [ruby 1-8] <br />
+ *   broadcast(bwyear, bweek=1, bwday=1, sg=nil) -> Date [ruby 1-9]
+ *
+ * If no arguments are given:
+ * * ruby 1.8: returns a +Date+ for 1582-10-15 (the Day of Calendar Reform in Italy)
+ * * ruby 1.9: returns a +Date+ for julian day 0
+ *
+ * Otherwise, returns a +Date+ for the broadcast week year, broadcast week, and
+ * broadcast week day given.
+ * Raises an +ArgumentError+ for invalid dates.
+ * Ignores the 4th argument.
+ */
+static VALUE rhrd_s_broadcast(int argc, VALUE *argv, VALUE klass) {
+  rhrd_t *d;
+  long bwyear = RHR_DEFAULT_BWYEAR;
+  long bweek = RHR_DEFAULT_BWEEK;
+  long bwday = RHR_DEFAULT_BWDAY;
+  VALUE rd = Data_Make_Struct(klass, rhrd_t, NULL, -1, d);
+
+  switch(argc) {
+    case 3:
+    case 4:
+      bwday = NUM2LONG(argv[2]);
+    case 2:
+      bweek = NUM2LONG(argv[1]);
+    case 1:
+      bwyear = NUM2LONG(argv[0]);
+#ifdef RUBY19
+      break;
+    case 0:
+      d->flags = RHR_HAVE_JD;
+      return rd;
+#else
+    case 0:
+      break;
+#endif
+    default:
+      rb_raise(rb_eArgError, "wrong number of arguments: %i for 4", argc);
+      break;
+  }
+
+  if(!rhrd__valid_broadcast(d, bwyear, bweek, bwday, RHR_OVERLIMIT_RAISE)) {
+    rb_raise(rb_eArgError, "invalid date (bwyear: %li, bweek: %li, bwday: %li)", bwyear, bweek, bwday);
   }
   return rd;
 }
@@ -1887,6 +2072,45 @@ static VALUE rhrd_s_valid_commercial_q(int argc, VALUE *argv, VALUE klass) {
 }
 
 /* call-seq:
+ *   valid_broadcast?(bwyear, bweek, bwday, sg=nil) -> Integer or nil [ruby 1-8] <br />
+ *   valid_broadcast?(bwyear, bweek, bwday, sg=nil) -> true or false [ruby 1-9]
+ *
+ * On ruby 1.8, returns the julian date +Integer+ for the given +bwyear+, +bweek+,
+ * and +bwday+, or nil if the given values are not a valid date.
+ *
+ * On ruby 1.9, returns true if the given +bwyear+, +bweek+, and +bwday+ represent
+ * a valid date, or false otherwise.
+ *
+ * Ignores the 4th argument.
+ */
+static VALUE rhrd_s_valid_broadcast_q(int argc, VALUE *argv, VALUE klass) {
+  rhrd_t d;
+  memset(&d, 0, sizeof(rhrd_t));
+
+  switch(argc) {
+    case 3:
+    case 4:
+      if (!rhrd__valid_broadcast(&d, NUM2LONG(argv[0]), NUM2LONG(argv[1]), NUM2LONG(argv[2]), RHR_NO_RAISE)) {
+#ifdef RUBY19
+        return Qfalse;
+#else
+        return Qnil;
+#endif
+      }
+      break;
+    default:
+      rb_raise(rb_eArgError, "wrong number of arguments: %i for 4", argc);
+      break;
+  }
+
+#ifdef RUBY19
+  return Qtrue;
+#else
+  return LONG2NUM(d.jd);
+#endif
+}
+
+/* call-seq:
  *   valid_jd?(jd, sg=nil) -> Object [ruby 1-8] <br />
  *   valid_jd?(jd, sg=nil) -> true [ruby 1-9]
  *
@@ -2087,7 +2311,7 @@ static VALUE rhrd_asctime(VALUE self) {
  *   cwday() -> Integer
  *
  * Returns the commercial week day as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).cwday
  *   # => 5
  *   Date.civil(2010, 1, 2).cwday
@@ -2107,10 +2331,33 @@ static VALUE rhrd_cwday(VALUE self) {
 }
 
 /* call-seq:
+ *   bwday() -> Integer
+ *
+ * Returns the commercial week day as an +Integer+. Example:
+ *
+ *   Date.civil(2009, 1, 2).bwday
+ *   # => 5
+ *   Date.civil(2010, 1, 2).bwday
+ *   # => 6
+ */
+static VALUE rhrd_bwday(VALUE self) {
+  rhrd_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bwday)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrd_t, d);
+  RHR_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
+  return LONG2NUM(n.day);
+}
+
+/* call-seq:
  *   cweek() -> Integer
  *
  * Returns the commercial week as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).cweek
  *   # => 1
  *   Date.civil(2010, 1, 2).cweek
@@ -2130,10 +2377,33 @@ static VALUE rhrd_cweek(VALUE self) {
 }
 
 /* call-seq:
+ *   bweek() -> Integer
+ *
+ * Returns the commercial week as an +Integer+. Example:
+ *
+ *   Date.civil(2009, 1, 2).bweek
+ *   # => 1
+ *   Date.civil(2010, 1, 2).bweek
+ *   # => 53
+ */
+static VALUE rhrd_cweek(VALUE self) {
+  rhrd_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bweek)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrd_t, d);
+  RHR_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
+  return LONG2NUM(n.month);
+}
+
+/* call-seq:
  *   cwyear() -> Integer
  *
  * Returns the commercial week year as an +Integer+. Example:
- * 
+ *
  *   Date.civil(2009, 1, 2).cwyear
  *   # => 2009
  *   Date.civil(2010, 1, 2).cwyear
@@ -2149,6 +2419,29 @@ static VALUE rhrd_cwyear(VALUE self) {
   n.jd = d->jd;
   rhrd__fill_commercial(&n);
   rhrd__set_cw_ivs(self, &n);
+  return LONG2NUM(n.year);
+}
+
+/* call-seq:
+ *   bwyear() -> Integer
+ *
+ * Returns the commercial week year as an +Integer+. Example:
+ * 
+ *   Date.civil(2009, 1, 2).bwyear
+ *   # => 2009
+ *   Date.civil(2010, 1, 2).bwyear
+ *   # => 2009
+ */
+static VALUE rhrd_bwyear(VALUE self) {
+  rhrd_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bwyear)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrd_t, d);
+  RHR_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
   return LONG2NUM(n.year);
 }
 
@@ -3689,6 +3982,29 @@ static VALUE rhrd_s_commercial_to_jd(int argc, VALUE *argv, VALUE klass) {
 
 /* call-seq:
  *   [ruby 1-8 only] <br />
+ *   broadcast_to_jd(bwyear, bweek, bwday, sg=nil) -> Integer
+ *
+ * Converts the given bwyear, bweek, and bwday into a julian date +Integer+.
+ * Ignores the 4th argument.
+ */
+static VALUE rhrd_s_broadcast_to_jd(int argc, VALUE *argv, VALUE klass) {
+  long jd;
+
+  switch(argc) {
+    case 3:
+    case 4:
+      jd = rhrd__broadcast_to_jd(NUM2LONG(argv[0]), NUM2LONG(argv[1]), NUM2LONG(argv[2]));
+      break;
+    default:
+      rb_raise(rb_eArgError, "wrong number of arguments: %i for 4", argc);
+      break;
+  }
+
+  return LONG2NUM(jd);
+}
+
+/* call-seq:
+ *   [ruby 1-8 only] <br />
  *   day_fraction_to_time(float) -> [hour, minute, second, sec_fraction]
  *
  * Converts the given float (which should be in the range [0.0, 1.0))
@@ -3790,6 +4106,30 @@ static VALUE rhrd_s_jd_to_commercial(int argc, VALUE *argv, VALUE klass) {
       break;
   }
   rhrd__fill_commercial(&d);
+  return rb_ary_new3(3, LONG2NUM(d.year), LONG2NUM(d.month), LONG2NUM(d.day));
+}
+
+/* call-seq:
+ *   [ruby 1-8 only] <br />
+ *   jd_to_broadcast(jd, sg=nil) -> [bwyear, bweek, bwday]
+ *
+ * Converts +jd+ to an array with 3 +Integer+ values: +bwyear+, +bweek+,
+ * and +bwday+.  Ignores the 2nd argument.
+ */
+static VALUE rhrd_s_jd_to_broadcast(int argc, VALUE *argv, VALUE klass) {
+  rhrd_t d;
+  memset(&d, 0, sizeof(rhrd_t));
+
+  switch(argc) {
+    case 1:
+    case 2:
+      d.jd = NUM2LONG(argv[0]);
+      break;
+    default:
+      rb_raise(rb_eArgError, "wrong number of arguments: %i for 3", argc);
+      break;
+  }
+  rhrd__fill_broadcast(&d);
   return rb_ary_new3(3, LONG2NUM(d.year), LONG2NUM(d.month), LONG2NUM(d.day));
 }
 
@@ -3969,6 +4309,9 @@ void Init_date_ext(void) {
   rhrd_id_cwday = rb_intern("cwday");
   rhrd_id_cweek = rb_intern("cweek");
   rhrd_id_cwyear = rb_intern("cwyear");
+  rhrd_id_bwday = rb_intern("bwday");
+  rhrd_id_bweek = rb_intern("bweek");
+  rhrd_id_bwyear = rb_intern("bwyear");
   rhrd_id_downcase = rb_intern("downcase");
   rhrd_id_getlocal = rb_intern("getlocal");
   rhrd_id_hash = rb_intern("hash");
@@ -4004,6 +4347,9 @@ void Init_date_ext(void) {
   rhrd_sym_cwday = ID2SYM(rb_intern("cwday"));
   rhrd_sym_cweek = ID2SYM(rb_intern("cweek"));
   rhrd_sym_cwyear = ID2SYM(rb_intern("cwyear"));
+  rhrd_sym_bwday = ID2SYM(rb_intern("bwday"));
+  rhrd_sym_bweek = ID2SYM(rb_intern("bweek"));
+  rhrd_sym_bwyear = ID2SYM(rb_intern("bwyear"));
   rhrd_sym_hour = ID2SYM(rb_intern("hour"));
 #ifdef RUBY19
   rhrd_sym_leftover = ID2SYM(rb_intern("leftover"));
@@ -4039,6 +4385,7 @@ void Init_date_ext(void) {
   rb_define_method(rhrd_s_class, "_strptime", rhrd_s__strptime, -1);
   rb_define_method(rhrd_s_class, "civil", rhrd_s_civil, -1);
   rb_define_method(rhrd_s_class, "commercial", rhrd_s_commercial, -1);
+  rb_define_method(rhrd_s_class, "broadcast", rhrd_s_broadcast, -1);
   rb_define_method(rhrd_s_class, "gregorian_leap?", rhrd_s_gregorian_leap_q, 1);
   rb_define_method(rhrd_s_class, "jd", rhrd_s_jd, -1);
   rb_define_method(rhrd_s_class, "julian_leap?", rhrd_s_julian_leap_q, 1);
@@ -4049,6 +4396,7 @@ void Init_date_ext(void) {
   rb_define_method(rhrd_s_class, "today", rhrd_s_today, -1);
   rb_define_method(rhrd_s_class, "valid_civil?", rhrd_s_valid_civil_q, -1);
   rb_define_method(rhrd_s_class, "valid_commercial?", rhrd_s_valid_commercial_q, -1);
+  rb_define_method(rhrd_s_class, "valid_broadcast?", rhrd_s_valid_broadcast_q, -1);
   rb_define_method(rhrd_s_class, "valid_jd?", rhrd_s_valid_jd_q, -1);
   rb_define_method(rhrd_s_class, "valid_ordinal?", rhrd_s_valid_ordinal_q, -1);
 
@@ -4063,6 +4411,9 @@ void Init_date_ext(void) {
   rb_define_method(rhrd_class, "cwday", rhrd_cwday, 0);
   rb_define_method(rhrd_class, "cweek", rhrd_cweek, 0);
   rb_define_method(rhrd_class, "cwyear", rhrd_cwyear, 0);
+  rb_define_method(rhrd_class, "bwday", rhrd_bwday, 0);
+  rb_define_method(rhrd_class, "bweek", rhrd_bweek, 0);
+  rb_define_method(rhrd_class, "bwyear", rhrd_bwyear, 0);
   rb_define_method(rhrd_class, "day", rhrd_day, 0);
   rb_define_method(rhrd_class, "day_fraction", rhrd_day_fraction, 0);
   rb_define_method(rhrd_class, "downto", rhrd_downto, 1);
@@ -4400,11 +4751,13 @@ void Init_date_ext(void) {
   rb_define_method(rhrd_s_class, "amjd_to_ajd", rhrd_s_amjd_to_ajd, 1);
   rb_define_method(rhrd_s_class, "civil_to_jd", rhrd_s_civil_to_jd, -1);
   rb_define_method(rhrd_s_class, "commercial_to_jd", rhrd_s_commercial_to_jd, -1);
+  rb_define_method(rhrd_s_class, "broadcast_to_jd", rhrd_s_broadcast_to_jd, -1);
   rb_define_method(rhrd_s_class, "day_fraction_to_time", rhrd_s_day_fraction_to_time, 1);
   rb_define_method(rhrd_s_class, "gregorian?", rhrd_s_gregorian_q, 2);
   rb_define_method(rhrd_s_class, "jd_to_ajd", rhrd_s_jd_to_ajd, -1);
   rb_define_method(rhrd_s_class, "jd_to_civil", rhrd_s_jd_to_civil, -1);
   rb_define_method(rhrd_s_class, "jd_to_commercial", rhrd_s_jd_to_commercial, -1);
+  rb_define_method(rhrd_s_class, "jd_to_broadcast", rhrd_s_jd_to_broadcast, -1);
   rb_define_method(rhrd_s_class, "jd_to_ld", rhrd_s_jd_to_ld, 1);
   rb_define_method(rhrd_s_class, "jd_to_mjd", rhrd_s_jd_to_mjd, 1);
   rb_define_method(rhrd_s_class, "jd_to_ordinal", rhrd_s_jd_to_ordinal, -1);
@@ -4422,11 +4775,13 @@ void Init_date_ext(void) {
   rb_define_alias(rhrd_s_class, "exist2?", "valid_ordinal?");
   rb_define_alias(rhrd_s_class, "exist3?", "valid_civil?");
   rb_define_alias(rhrd_s_class, "existw?", "valid_commercial?");
+  rb_define_alias(rhrd_s_class, "existbw?", "valid_broadcast?");
   rb_define_alias(rhrd_s_class, "new0", "new!");
   rb_define_alias(rhrd_s_class, "new1", "jd");
   rb_define_alias(rhrd_s_class, "new2", "ordinal");
   rb_define_alias(rhrd_s_class, "new3", "civil");
   rb_define_alias(rhrd_s_class, "neww", "commercial");
+  rb_define_alias(rhrd_s_class, "newbw", "broadcast");
   rb_define_alias(rhrd_s_class, "ns?", "gregorian?");
   rb_define_alias(rhrd_s_class, "os?", "julian?");
 

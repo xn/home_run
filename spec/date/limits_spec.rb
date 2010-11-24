@@ -73,6 +73,21 @@ describe "Date limits: " do
     Date.commercial(@d2.cwyear, @d2.cweek, @d2.cwday).jd.should == @d2.jd
   end
 
+  it ".broadcast should raise RangeError for dates that are too large or small" do
+    proc{Date.broadcast(@d1.bwyear, @d1.bwday == 6 ? @d1.bweek + 1 : @d1.bweek, @d1.bwday == 6 ? 1 : @d1.bwday + 1)}.should raise_error(RangeError)
+    proc{Date.broadcast(@d2.bwyear, @d2.bwday == 1 ? @d2.bweek - 1 : @d2.bweek, @d2.bwday == 1 ? 7 : @d2.bwday - 1)}.should raise_error(RangeError)
+  end
+
+  it ".broadcast should not raise for dates that are not too large or small" do
+    proc{Date.broadcast(@d1.bwyear, @d1.bweek, @d1.bwday)}.should_not raise_error
+    proc{Date.broadcast(@d2.bwyear, @d2.bweek, @d2.bwday)}.should_not raise_error
+  end
+
+  it ".broadcast should correctly convert dates within limits to JD" do
+    Date.broadcast(@d1.bwyear, @d1.bweek, @d1.bwday).jd.should == @d1.jd
+    Date.broadcast(@d2.bwyear, @d2.bweek, @d2.bwday).jd.should == @d2.jd
+  end
+
   it ".ordinal should raise RangeError for dates that are too large or small" do
     proc{Date.ordinal(@d1.year, @d1.yday + 1)}.should raise_error(RangeError)
     proc{Date.ordinal(@d2.year, @d2.yday - 1)}.should raise_error(RangeError)

@@ -25,6 +25,9 @@ extern ID rhrd_id__parse;
 extern ID rhrd_id_cwday;
 extern ID rhrd_id_cweek;
 extern ID rhrd_id_cwyear;
+extern ID rhrd_id_bwday;
+extern ID rhrd_id_bweek;
+extern ID rhrd_id_bwyear;
 extern ID rhrd_id_hash;
 extern ID rhrd_id_now;
 extern ID rhrd_id_offset;
@@ -228,6 +231,45 @@ int rhrdt__valid_commercial(rhrdt_t *d, long cwyear, long cweek, long cwday) {
   n.jd = rhrd__commercial_to_jd(cwyear, cweek, cwday);
   rhrd__fill_commercial(&n);
   if(cwyear != n.year || cweek != n.month || cwday != n.day) {
+    return 0;
+  }
+
+  if ((n.jd > RHR_JD_MAX) || (n.jd < RHR_JD_MIN)) {
+    rb_raise(rb_eRangeError, "datetime out of range");
+  }
+
+  d->jd = n.jd;
+  d->flags = RHR_HAVE_JD;
+  return 1;
+}
+
+/* Same as rhrd__valid_broadcast, for rhrdt_t. */
+int rhrdt__valid_broadcast(rhrdt_t *d, long bwyear, long bweek, long bwday) {
+  rhrd_t n;
+  memset(&n, 0, sizeof(rhrd_t));
+
+  if (bwday < 0) {
+    if (bwday < -8) {
+      return 0;
+    }
+    bwday += 8;
+  }
+  if (bweek < 0) {
+    if (bweek < -53) {
+      return 0;
+    }
+    n.jd = rhrd__broadcast_to_jd(bwyear + 1, 1, 1) + bweek * 7;
+    rhrd__fill_broadcast(&n);
+    if (n.year != bwyear) {
+      return 0;
+    }
+    bweek = n.month;
+    memset(&n, 0, sizeof(rhrd_t));
+  }
+
+  n.jd = rhrd__broadcast_to_jd(bwyear, bweek, bwday);
+  rhrd__fill_broadcast(&n);
+  if(bwyear != n.year || bweek != n.month || bwday != n.day) {
     return 0;
   }
 
@@ -641,7 +683,7 @@ static VALUE rhrdt_s_civil(int argc, VALUE *argv, VALUE klass) {
  * * ruby 1.8: returns a +DateTime+ for 1582-10-15 (the Day of Calendar Reform in Italy)
  * * ruby 1.9: returns a +DateTime+ for julian day 0
  *
- * Otherwise, returns a +DateTime+ for the commercial week year, commercial week, 
+ * Otherwise, returns a +DateTime+ for the commercial week year, commercial week,
  * commercial week day, hour, minute, second, and offset given.
  * Raises an +ArgumentError+ for invalid dates or times.
  * Ignores the 8th argument.
@@ -688,6 +730,67 @@ static VALUE rhrdt_s_commercial(int argc, VALUE *argv, VALUE klass) {
   }
   if(!rhrdt__valid_commercial(dt, cwyear, cweek, cwday)) {
     rb_raise(rb_eArgError, "invalid date (cwyear: %li, cweek: %li, cwday: %li)", cwyear, cweek, cwday);
+  }
+  rhrdt__set_time(dt, hour, minute, second, offset);
+  return rdt;
+}
+
+/* call-seq:
+ *   broadcast() -> DateTime <br />
+ *   broadcast(bwyear, bweek=41, bwday=5, hour=0, minute=0, second=0, offset=0, sg=nil) -> DateTime [ruby 1-8] <br />
+ *   broadcast(bwyear, bweek=1, bwday=1, hour=0, minute=0, second=0, offset=0, sg=nil) -> DateTime [ruby 1-9]
+ *
+ * If no arguments are given:
+ * * ruby 1.8: returns a +DateTime+ for 1582-10-15 (the Day of Calendar Reform in Italy)
+ * * ruby 1.9: returns a +DateTime+ for julian day 0
+ *
+ * Otherwise, returns a +DateTime+ for the broadcast week year, broadcast week,
+ * broadcast week day, hour, minute, second, and offset given.
+ * Raises an +ArgumentError+ for invalid dates or times.
+ * Ignores the 8th argument.
+ */
+static VALUE rhrdt_s_broadcast(int argc, VALUE *argv, VALUE klass) {
+  rhrdt_t *dt;
+  long bwyear = RHR_DEFAULT_BWYEAR;
+  long bweek = RHR_DEFAULT_BWEEK;
+  long bwday = RHR_DEFAULT_BWDAY;
+  long hour = 0;
+  long minute = 0;
+  long second = 0;
+  double offset = 0.0;
+  VALUE rdt = Data_Make_Struct(klass, rhrdt_t, NULL, -1, dt);
+
+  switch(argc) {
+    case 8:
+    case 7:
+      offset = NUM2DBL(argv[6]);
+    case 6:
+      second = NUM2LONG(argv[5]);
+    case 5:
+      minute = NUM2LONG(argv[4]);
+    case 4:
+      hour = NUM2LONG(argv[3]);
+    case 3:
+      bwday = NUM2LONG(argv[2]);
+    case 2:
+      bweek = NUM2LONG(argv[1]);
+    case 1:
+      bwyear = NUM2LONG(argv[0]);
+#ifdef RUBY19
+      break;
+    case 0:
+      dt->flags = RHR_HAVE_JD | RHR_HAVE_NANOS | RHR_HAVE_HMS;
+      return rdt;
+#else
+    case 0:
+      break;
+#endif
+    default:
+      rb_raise(rb_eArgError, "wrong number of arguments: %i for 8", argc);
+      break;
+  }
+  if(!rhrdt__valid_broadcast(dt, bwyear, bweek, bwday)) {
+    rb_raise(rb_eArgError, "invalid date (bwyear: %li, bweek: %li, bwday: %li)", bwyear, bweek, bwday);
   }
   rhrdt__set_time(dt, hour, minute, second, offset);
   return rdt;
@@ -1004,7 +1107,7 @@ static VALUE rhrdt_asctime(VALUE self) {
  *   cwday() -> Integer
  *
  * Returns the commercial week day as an +Integer+. Example:
- * 
+ *
  *   DateTime.civil(2009, 1, 2).cwday
  *   # => 5
  *   DateTime.civil(2010, 1, 2).cwday
@@ -1024,10 +1127,33 @@ static VALUE rhrdt_cwday(VALUE self) {
 }
 
 /* call-seq:
+ *   bwday() -> Integer
+ *
+ * Returns the broadcast week day as an +Integer+. Example:
+ *
+ *   DateTime.civil(2009, 1, 2).bwday
+ *   # => 5
+ *   DateTime.civil(2010, 1, 2).bwday
+ *   # => 6
+ */
+static VALUE rhrdt_bwday(VALUE self) {
+  rhrdt_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bwday)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrdt_t, d);
+  RHRDT_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
+  return LONG2NUM(n.day);
+}
+
+/* call-seq:
  *   cweek() -> Integer
  *
  * Returns the commercial week as an +Integer+. Example:
- * 
+ *
  *   DateTime.civil(2009, 1, 2).cweek
  *   # => 1
  *   DateTime.civil(2010, 1, 2).cweek
@@ -1047,10 +1173,33 @@ static VALUE rhrdt_cweek(VALUE self) {
 }
 
 /* call-seq:
+ *   bweek() -> Integer
+ *
+ * Returns the broadcast week as an +Integer+. Example:
+ *
+ *   DateTime.civil(2009, 1, 2).bweek
+ *   # => 1
+ *   DateTime.civil(2010, 1, 2).bweek
+ *   # => 53
+ */
+static VALUE rhrdt_bweek(VALUE self) {
+  rhrdt_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bweek)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrdt_t, d);
+  RHRDT_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
+  return LONG2NUM(n.month);
+}
+
+/* call-seq:
  *   cwyear() -> Integer
  *
  * Returns the commercial week year as an +Integer+. Example:
- * 
+ *
  *   DateTime.civil(2009, 1, 2).cwyear
  *   # => 2009
  *   DateTime.civil(2010, 1, 2).cwyear
@@ -1066,6 +1215,29 @@ static VALUE rhrdt_cwyear(VALUE self) {
   n.jd = d->jd;
   rhrd__fill_commercial(&n);
   rhrd__set_cw_ivs(self, &n);
+  return LONG2NUM(n.year);
+}
+
+/* call-seq:
+ *   bwyear() -> Integer
+ *
+ * Returns the broadcast week year as an +Integer+. Example:
+ *
+ *   DateTime.civil(2009, 1, 2).bwyear
+ *   # => 2009
+ *   DateTime.civil(2010, 1, 2).bwyear
+ *   # => 2009
+ */
+static VALUE rhrdt_bwyear(VALUE self) {
+  rhrdt_t *d;
+  rhrd_t n;
+  RHR_CACHED_IV(self, rhrd_id_bwyear)
+  memset(&n, 0, sizeof(rhrd_t));
+  Data_Get_Struct(self, rhrdt_t, d);
+  RHRDT_FILL_JD(d)
+  n.jd = d->jd;
+  rhrd__fill_broadcast(&n);
+  rhrd__set_bw_ivs(self, &n);
   return LONG2NUM(n.year);
 }
 
@@ -2752,6 +2924,7 @@ void Init_datetime(void) {
   rb_define_method(rhrdt_s_class, "_strptime", rhrdt_s__strptime, -1);
   rb_define_method(rhrdt_s_class, "civil", rhrdt_s_civil, -1);
   rb_define_method(rhrdt_s_class, "commercial", rhrdt_s_commercial, -1);
+  rb_define_method(rhrdt_s_class, "broadcast", rhrdt_s_broadcast, -1);
   rb_define_method(rhrdt_s_class, "jd", rhrdt_s_jd, -1);
   rb_define_method(rhrdt_s_class, "new!", rhrdt_s_new_b, -1);
   rb_define_method(rhrdt_s_class, "now", rhrdt_s_now, -1);
@@ -2768,6 +2941,9 @@ void Init_datetime(void) {
   rb_define_method(rhrdt_class, "cwday", rhrdt_cwday, 0);
   rb_define_method(rhrdt_class, "cweek", rhrdt_cweek, 0);
   rb_define_method(rhrdt_class, "cwyear", rhrdt_cwyear, 0);
+  rb_define_method(rhrdt_class, "bwday", rhrdt_bwday, 0);
+  rb_define_method(rhrdt_class, "bweek", rhrdt_bweek, 0);
+  rb_define_method(rhrdt_class, "bwyear", rhrdt_bwyear, 0);
   rb_define_method(rhrdt_class, "day", rhrdt_day, 0);
   rb_define_method(rhrdt_class, "day_fraction", rhrdt_day_fraction, 0);
   rb_define_method(rhrdt_class, "downto", rhrdt_downto, 1);
@@ -2859,6 +3035,7 @@ void Init_datetime(void) {
   rb_define_alias(rhrdt_s_class, "new2", "ordinal");
   rb_define_alias(rhrdt_s_class, "new3", "civil");
   rb_define_alias(rhrdt_s_class, "neww", "commercial");
+  rb_define_alias(rhrdt_s_class, "newbw", "broadcast");
 
   rb_define_alias(rhrdt_class, "newof", "new_offset");
   rb_define_alias(rhrdt_class, "of", "offset");

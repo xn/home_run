@@ -18,10 +18,16 @@
 #define RHR_DEFAULT_CWYEAR -4713
 #define RHR_DEFAULT_CWEEK 1
 #define RHR_DEFAULT_CWDAY 1
+#define RHR_DEFAULT_BWYEAR -4713
+#define RHR_DEFAULT_BWEEK 1
+#define RHR_DEFAULT_BWDAY 1
 #else
 #define RHR_DEFAULT_CWYEAR 1582
 #define RHR_DEFAULT_CWEEK 41
 #define RHR_DEFAULT_CWDAY 5
+#define RHR_DEFAULT_BWYEAR 1582
+#define RHR_DEFAULT_BWEEK 41
+#define RHR_DEFAULT_BWDAY 5
 #endif
 
 #define RHR_JD_MJD 2400001
@@ -98,6 +104,9 @@ so that no calculations can overflow.
 #define RHRR_CWYEAR_SET 0x200
 #define RHRR_CWEEK_SET 0x400
 #define RHRR_CWDAY_SET 0x800
+#define RHRR_BWYEAR_SET 0x200
+#define RHRR_BWEEK_SET 0x400
+#define RHRR_BWDAY_SET 0x800
 #define RHRR_SEC_FRACTION_SET 0x1000
 #define RHRR_UNIX_SET 0x2000
 #define RHRR_WNUM0_SET 0x4000
@@ -166,6 +175,8 @@ int rhrd__valid_civil_limits(long year, long month, long day);
 long rhrd__ymd_to_jd(long year, long month, long day);
 long rhrd__commercial_to_jd(long cwyear, long cweek, long cwday);
 void rhrd__fill_commercial(rhrd_t *d);
+long rhrd__broadcast_to_jd(long bwyear, long bweek, long bwday);
+void rhrd__fill_broadcast(rhrd_t *d);
 long rhrd__unix_to_jd(long long t);
 long rhrd__mod(long a, long b);
 long rhrd__modll(long long a, long b);

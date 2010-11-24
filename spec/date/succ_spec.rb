@@ -8,6 +8,8 @@ describe "Date#succ" do
     ds.succ.should == Date.civil(2008, 11, 1)
     ds    = Date.commercial(2008, 2, 7)
     ds.succ.should == Date.commercial(2008, 3, 1)
+    ds    = Date.broadcast(2008, 2, 7)
+    ds.succ.should == Date.broadcast(2008, 3, 1)
     ds    = Date.jd(2008)
     ds.succ.should == Date.jd(2009)
     ds    = Date.ordinal(2008, 366)

@@ -98,6 +98,20 @@ ruby_version_is "" ... "1.9" do
       Date.jd_to_commercial(2454410, 1).should == [2007, 45, 1]
     end
   end
+
+  describe "Date#broadcast_to_jd" do
+    it "should convert a broadcast date (year - week - day of week) into a Julian day number" do
+      Date.broadcast_to_jd(2007, 45, 1).should == 2454410
+      Date.broadcast_to_jd(2007, 45, 1, 1).should == 2454410
+    end
+  end
+
+  describe "Date#jd_to_broadcast" do
+    it "should convert a Julian day number into a broadcast date" do
+      Date.jd_to_broadcast(2454410).should == [2007, 45, 1]
+      Date.jd_to_broadcast(2454410, 1).should == [2007, 45, 1]
+    end
+  end
   
   describe "Date#ajd_to_jd" do
     it "should convert a Astronomical Julian day number into a Julian day number" do

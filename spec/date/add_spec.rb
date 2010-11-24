@@ -5,6 +5,7 @@ describe "Date#+" do
   it "should add a number of days to a Date" do
     (Date.civil(2007,2,27) + 315).should == Date.civil(2008, 1, 8)
     (Date.commercial(2007,2,2) + 315).should == Date.commercial(2007, 47, 2)
+    (Date.broadcast(2007,2,2) + 315).should == Date.broadcast(2007, 47, 2)
     (Date.jd(2454782) + 315).should == Date.jd(2455097)
     (Date.ordinal(2008, 10) + 315).should == Date.ordinal(2008, 325)
   end

@@ -320,3 +320,10 @@ above, please test and send me a report including:
 == Author
 
 Jeremy Evans <code@jeremyevans.net>
+
+== Broadcast Week Extensions
+
+added broadcast week to the Date and Datetime classes.
+The broadcast week is exactly the same as the commercial week except the origin.
+The first week of a commercial year is the week that contains the first Thursday of the year.
+The first week of a broadcast year is the week that contains the first Monday of the year. (used)

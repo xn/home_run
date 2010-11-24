@@ -5,6 +5,7 @@ describe "Date#<<" do
   it "should substract a number of months from a date" do
     (Date.civil(2007, 12, 27) << 10).should == Date.civil(2007,2,27)
     (Date.commercial(2007, 45, 5) << 10).should == Date.commercial(2007,2,2)
+    (Date.broadcast(2007, 45, 5) << 10).should == Date.broadcast(2007,2,2)
     (Date.jd(2455086) << 10).should == Date.jd(2454782)
     (Date.ordinal(2008, 315) << 10).should == Date.ordinal(2008, 10)
     (Date.civil(2007, 12, 27) << 12).should == Date.civil(2006,12,27)

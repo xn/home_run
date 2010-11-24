@@ -6,6 +6,7 @@ describe "Date#>>" do
     (Date.civil(2007,2,27) >> 10).should == Date.civil(2007, 12, 27)
     (Date.civil(2007,2,27) >> 10).should == Date.civil(2007, 12, 27)
     (Date.commercial(2007,2,2) >> 10).should == Date.commercial(2007, 45, 5)
+    (Date.broadcast(2007,2,2) >> 10).should == Date.broadcast(2007, 45, 5)
     (Date.jd(2454782) >> 10).should == Date.jd(2455086)
     (Date.ordinal(2008, 10) >> 10).should == Date.ordinal(2008, 315)
     (Date.civil(2007,2,27) >> 22).should == Date.civil(2008, 12, 27)
