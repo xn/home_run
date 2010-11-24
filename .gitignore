@@ -10,3 +10,4 @@
 /lib/date_ext.so
 /tmp
 /coverage
+build.sh

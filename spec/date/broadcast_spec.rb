@@ -6,7 +6,7 @@ describe :date_broadcast, :shared => true do
       d = Date.send(@method)
       d.year.should  == 1582
       d.month.should == 10
-      d.day.should   == 15
+      d.day.should   == 8
     end
   end
 
@@ -19,15 +19,15 @@ describe :date_broadcast, :shared => true do
   ruby_version_is "" ... "1.9" do
     it "Creates a Date for the friday in the year and week given" do
       d = Date.send(@method, 2000, 1)
-      d.year.should  == 2000
-      d.month.should == 1
-      d.day.should   == 7
+      d.year.should  == 1999
+      d.month.should == 12
+      d.day.should   == 31
       d.bwday.should == 5
     end
   end
 
   ruby_version_is "1.9" do
-    it "Creates a Date for the monday in the year and week given #{@method}" do
+    it "Creates a Date for the monday in the year and week given" do
       d = Date.send(@method, 2001, 1)
       d.year.should  == 2001
       d.month.should == 1
@@ -62,7 +62,7 @@ end
 
 describe "Date.broadcast" do
   it_behaves_like(:date_broadcast, :broadcast)
-  
+
   ruby_version_is "" ... "1.9" do
     it "should have defaults and an optional sg value" do
       Date.broadcast.should == Date.broadcast(1582, 41, 5)
@@ -72,7 +72,7 @@ describe "Date.broadcast" do
       Date.broadcast(2008, 1, 1, 1).should == Date.broadcast(2008, 1, 1)
     end
   end
-  
+
   ruby_version_is "1.9" do
     it "should have defaults and an optional sg value" do
       Date.broadcast.should == Date.jd
@@ -108,25 +108,25 @@ describe "Date.valid_broadcast?" do
 
   ruby_version_is "" ... "1.9" do
     it "should be able to determine if the date is a valid broadcast date" do
-      Date.valid_broadcast?(1582, 41, 4).should == Date.civil(1582, 10, 14).jd
-      Date.valid_broadcast?(1582, 41, 5).should == Date.civil(1582, 10, 15).jd
-      
-      Date.valid_broadcast?(1582, 41, 4, Date::ENGLAND).should == Date.civil(1582, 10, 14).jd
-      Date.valid_broadcast?(1752, 37, 4, Date::ENGLAND).should == Date.civil(1752, 9, 14, Date::ENGLAND).jd
-      
+      Date.valid_broadcast?(1582, 42, 4).should == Date.civil(1582, 10, 14).jd
+      Date.valid_broadcast?(1582, 42, 5).should == Date.civil(1582, 10, 15).jd
+
+      Date.valid_broadcast?(1582, 42, 4, Date::ENGLAND).should == Date.civil(1582, 10, 14).jd
+      Date.valid_broadcast?(1752, 38, 4, Date::ENGLAND).should == Date.civil(1752, 9, 14, Date::ENGLAND).jd
+
       Date.valid_broadcast?(2007, 45, 1).should == 2454410
       Date.valid_broadcast?(2007, 45, 1, 1).should == 2454410
       Date.valid_broadcast?(2007, 54, 1, 1).should == nil
     end
-    
+
     it "#existw? should be the same as valid_broadcast?" do
       Date.existw?(2007, 45, 1, 1).should == Date.valid_broadcast?(2007, 45, 1, 1)
     end
 
     it "should be able to handle negative week and day numbers" do
-      Date.valid_broadcast?(1582, -12, -4).should == Date.civil(1582, 10, 14).jd
-      Date.valid_broadcast?(1582, -12, -3).should == Date.civil(1582, 10, 15).jd
-      
+      Date.valid_broadcast?(1582, -11, -4).should == Date.civil(1582, 10, 14).jd
+      Date.valid_broadcast?(1582, -11, -3).should == Date.civil(1582, 10, 15).jd
+
       Date.valid_broadcast?(2007, -44, -2).should == Date.civil(2007, 3, 3).jd
       Date.valid_broadcast?(2008, -44, -2).should == Date.civil(2008, 3, 1).jd
     end
@@ -140,7 +140,7 @@ describe "Date.valid_broadcast?" do
       Date.valid_broadcast?(1582, 41, 5).should == true
       Date.valid_broadcast?(1582, 41, 4, Date::ENGLAND).should == true
       Date.valid_broadcast?(1752, 37, 4, Date::ENGLAND).should == true
-      
+
       Date.valid_broadcast?(2007, 45, 1).should == true
       Date.valid_broadcast?(2007, 45, 1, 1).should == true
       Date.valid_broadcast?(2007, 54, 1, 1).should == false
@@ -149,7 +149,7 @@ describe "Date.valid_broadcast?" do
     it "should be able to handle negative week and day numbers" do
       Date.valid_broadcast?(1582, -12, -4).should == true
       Date.valid_broadcast?(1582, -12, -3).should == true
-      
+
       Date.valid_broadcast?(2007, -44, -2).should == true
       Date.valid_broadcast?(2008, -44, -2).should == true
     end
