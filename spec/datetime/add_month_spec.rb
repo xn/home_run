@@ -6,6 +6,7 @@ describe "DateTime#>>" do
     (DateTime.civil(2007,2,27) >> 10).should == DateTime.civil(2007, 12, 27)
     (DateTime.civil(2007,2,27) >> 10).should == DateTime.civil(2007, 12, 27)
     (DateTime.commercial(2007,2,2) >> 10).should == DateTime.commercial(2007, 45, 5)
+    (DateTime.broadcast(2007,2,2) >> 10).should == DateTime.broadcast(2007, 45, 5)
     (DateTime.jd(2454782) >> 10).should == DateTime.jd(2455086)
     (DateTime.ordinal(2008, 10) >> 10).should == DateTime.ordinal(2008, 315)
     (DateTime.civil(2007,2,27) >> 22).should == DateTime.civil(2008, 12, 27)

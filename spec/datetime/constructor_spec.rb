@@ -34,7 +34,7 @@ describe "DateTime constructors" do
     d.sec.should == 8
     d.offset.should == 1/24.0
   end
-  
+
   ruby_version_is "1.9" do
     it ".commercial should have defaults and an optional sg value" do
       DateTime.commercial.should == DateTime.jd
@@ -60,6 +60,45 @@ describe "DateTime constructors" do
       DateTime.commercial(2008, 1, 1, 0, 0, 0).should == DateTime.commercial(2008, 1, 1, 0, 0, 0, 0.0)
       DateTime.commercial(2008, 1, 1, 0, 0, 0, 0.0).should == DateTime.commercial(2008, 1, 1, 0, 0, 0, 0.0)
       DateTime.commercial(2008, 1, 1, 1, 1, 1, 0.5, 1).should == DateTime.commercial(2008, 1, 1, 1, 1, 1, 0.5)
+    end
+  end
+
+  it ".broadcast creates a datetime with arguments" do
+    d = DateTime.broadcast(2000, 3, 5, 6, 7, 8, 1/24.0)
+    d.bwyear.should == 2000
+    d.bweek.should == 3
+    d.bwday.should == 5
+    d.hour.should == 6
+    d.min.should == 7
+    d.sec.should == 8
+    d.offset.should == 1/24.0
+  end
+
+  ruby_version_is "1.9" do
+    it ".broadcast should have defaults and an optional sg value" do
+      DateTime.broadcast.should == DateTime.jd
+      DateTime.broadcast(2008).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 1, 1, 1, 0.5, 1).should == DateTime.broadcast(2008, 1, 1, 1, 1, 1, 0.5)
+    end
+  end
+
+  ruby_version_is "" ... "1.9" do
+    it ".broadcast should have defaults and an optional sg value" do
+      DateTime.broadcast.should == DateTime.broadcast(1582, 41, 5)
+      DateTime.broadcast(2008).should == DateTime.broadcast(2008, 41, 5, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1).should == DateTime.broadcast(2008, 1, 5, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0, 0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0).should == DateTime.broadcast(2008, 1, 1, 0, 0, 0, 0.0)
+      DateTime.broadcast(2008, 1, 1, 1, 1, 1, 0.5, 1).should == DateTime.broadcast(2008, 1, 1, 1, 1, 1, 0.5)
     end
   end
 
@@ -145,6 +184,7 @@ describe "DateTime constructors" do
     c.jd.should be_kind_of(c)
     c.civil.should be_kind_of(c)
     c.commercial.should be_kind_of(c)
+    c.broadcast.should be_kind_of(c)
     c.ordinal.should be_kind_of(c)
     c.new!.should be_kind_of(c)
     c.new.should be_kind_of(c)

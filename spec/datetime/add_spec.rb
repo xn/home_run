@@ -5,6 +5,7 @@ describe "DateTime#+" do
   it "should add a number of days to a Date" do
     (DateTime.civil(2007,2,27) + 315).should == DateTime.civil(2008, 1, 8)
     (DateTime.commercial(2007,2,2) + 315).should == DateTime.commercial(2007, 47, 2)
+    (DateTime.broadcast(2007,2,2) + 315).should == DateTime.broadcast(2007, 47, 2)
     (DateTime.jd(2454782) + 315).should == DateTime.jd(2455097)
     (DateTime.ordinal(2008, 10) + 315).should == DateTime.ordinal(2008, 325)
   end
@@ -12,6 +13,7 @@ describe "DateTime#+" do
   it "should add a fractional number of days to a Date" do
     (DateTime.civil(2007,2,27) + 315.5).should == DateTime.civil(2008, 1, 8, 12)
     (DateTime.commercial(2007,2,2) + 315.75).should == DateTime.commercial(2007, 47, 2, 18)
+    (DateTime.broadcast(2007,2,2) + 315.75).should == DateTime.broadcast(2007, 47, 2, 18)
     (DateTime.jd(2454782) + 315.25).should == DateTime.jd(2455097, 6)
     (DateTime.ordinal(2008, 10) + 315.25).should == DateTime.ordinal(2008, 325, 6)
   end

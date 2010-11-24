@@ -182,11 +182,11 @@ describe "Date#cwday" do
 end
 
   describe "Date#bwyear" do
-  it "should be able to determine the commercial year for a date" do
+  it "should be able to determine the business year for a date" do
     Date.civil(2007,  1, 17).bwyear.should == 2007
     Date.civil(2008, 10, 28).bwyear.should == 2008
     Date.civil(2007, 12, 31).bwyear.should == 2008
-    Date.civil(2010,  1,  1).bwyear.should == 2009
+    Date.civil(2006,  1,  1).bwyear.should == 2006
     Date.commercial(2008, 1, 1).bwyear.should == 2008
     Date.commercial(2008, 52, 1).bwyear.should == 2008
     Date.broadcast(2008, 1, 1).bwyear.should == 2008
@@ -200,11 +200,11 @@ end
 end
 
 describe "Date#bweek" do
-  it "should be able to determine the commercial week for a date" do
+  it "should be able to determine the business week for a date" do
     Date.civil(2007,  1, 17).bweek.should == 3
     Date.civil(2008, 10, 28).bweek.should == 44
     Date.civil(2007, 12, 31).bweek.should == 1
-    Date.civil(2010,  1,  1).bweek.should == 53
+    Date.civil(2005,  12,  25).bweek.should == 52
     Date.commercial(2008, 1, 1).bweek.should == 1
     Date.commercial(2008, 10, 5).bweek.should == 10
     Date.broadcast(2008, 1, 1).bweek.should == 1
@@ -218,7 +218,7 @@ describe "Date#bweek" do
 end
 
 describe "Date#bwday" do
-  it "should be able to determine the commercial week day for a date" do
+  it "should be able to determine the business week day for a date" do
     Date.civil(2007,  1, 17).bwday.should == 3
     Date.civil(2008, 10, 26).bwday.should == 7
     Date.commercial(2008, 1, 1).bwday.should == 1

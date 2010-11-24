@@ -5,6 +5,7 @@ describe "DateTime#-" do
   it "should substract a number of days from a DateTime" do
     (DateTime.civil(2008, 1, 8) - 315).should == DateTime.civil(2007,2,27)
     (DateTime.commercial(2007, 47, 2) - 315).should == DateTime.commercial(2007,2,2)
+    (DateTime.broadcast(2007, 47, 2) - 315).should == DateTime.broadcast(2007,2,2)
     (DateTime.jd(2455097) - 315).should == DateTime.jd(2454782)
     (DateTime.ordinal(2008, 325) - 315).should == DateTime.ordinal(2008, 10)
   end
@@ -12,6 +13,7 @@ describe "DateTime#-" do
   it "should subtract a fractional number of days to a Date" do
     (DateTime.civil(2008, 1, 8, 12) - 315.5).should == DateTime.civil(2007,2,27)
     (DateTime.commercial(2007, 47, 2, 18) - 315.75).should == DateTime.commercial(2007,2,2)
+    (DateTime.broadcast(2007, 47, 2, 18) - 315.75).should == DateTime.broadcast(2007,2,2)
     (DateTime.jd(2455097, 6) - 315.25).should == DateTime.jd(2454782)
     (DateTime.ordinal(2008, 325, 6) - 315.25).should == DateTime.ordinal(2008, 10)
   end
@@ -39,18 +41,25 @@ describe "DateTime#-" do
     (DateTime.civil(2009,2,27) - DateTime.civil(2008,2,27)).should be_close(366.0, 0.00000001)
     
     (DateTime.civil(2009,2,27) - DateTime.commercial(2008,2,1)).should be_close(417.0, 0.00000001)
+    (DateTime.civil(2009,2,27) - DateTime.broadcast(2008,2,1)).should be_close(417.0, 0.00000001)
     (DateTime.civil(2009,2,27) - DateTime.jd(2454782)).should be_close(108.0, 0.00000001)
     (DateTime.civil(2009,2,27) - DateTime.ordinal(2008, 10)).should be_close(414.0, 0.00000001)
     
     (DateTime.commercial(2008,2,1) - DateTime.civil(2008,2,27)).should be_close(-51.0, 0.00000001)
     (DateTime.commercial(2008,2,1) - DateTime.jd(2454782)).should be_close(-309.0, 0.00000001)
     (DateTime.commercial(2008,2,1) - DateTime.ordinal(2008, 10)).should be_close(-3.0, 0.00000001)
+
+    (DateTime.broadcast(2008,2,1) - DateTime.civil(2008,2,27)).should be_close(-51.0, 0.00000001)
+    (DateTime.broadcast(2008,2,1) - DateTime.jd(2454782)).should be_close(-309.0, 0.00000001)
+    (DateTime.broadcast(2008,2,1) - DateTime.ordinal(2008, 10)).should be_close(-3.0, 0.00000001)
     
     (DateTime.jd(2454782) - DateTime.commercial(2008,2,1)).should be_close(309.0, 0.00000001)
+    (DateTime.jd(2454782) - DateTime.broadcast(2008,2,1)).should be_close(309.0, 0.00000001)
     (DateTime.jd(2454782) - DateTime.civil(2009,2,27)).should be_close(-108.0, 0.00000001)
     (DateTime.jd(2454782) - DateTime.ordinal(2008, 10)).should be_close(306.0, 0.00000001)
     
     (DateTime.ordinal(2008, 10) - DateTime.commercial(2008,2,1)).should be_close(3.0, 0.00000001)
+    (DateTime.ordinal(2008, 10) - DateTime.broadcast(2008,2,1)).should be_close(3.0, 0.00000001)
     (DateTime.ordinal(2008, 10) - DateTime.jd(2454782)).should be_close(-306.0, 0.00000001)
     (DateTime.ordinal(2008, 10) - DateTime.civil(2009,2,27)).should be_close(-414.0, 0.00000001)
   end
@@ -63,12 +72,14 @@ describe "DateTime#-" do
 
   it "should be able to subtract a Date from a DateTime" do
     (DateTime.ordinal(2008, 10) - Date.commercial(2008,2,1)).should be_close(3.0, 0.00000001)
+    (DateTime.ordinal(2008, 10) - Date.broadcast(2008,2,1)).should be_close(3.0, 0.00000001)
     (DateTime.ordinal(2008, 10) - Date.jd(2454782)).should be_close(-306.0, 0.00000001)
     (DateTime.ordinal(2008, 10) - Date.civil(2009,2,27)).should be_close(-414.0, 0.00000001)
   end
 
   it "should assume a Date is in the same offset as the receiver" do
     (DateTime.ordinal(2008, 10, 0, 0, 0, 0.5) - Date.commercial(2008,2,1)).should be_close(3.0, 0.00000001)
+    (DateTime.ordinal(2008, 10, 0, 0, 0, 0.5) - Date.broadcast(2008,2,1)).should be_close(3.0, 0.00000001)
     (DateTime.ordinal(2008, 10, 0, 0, 0, 0.1) - Date.jd(2454782)).should be_close(-306.0, 0.00000001)
     (DateTime.ordinal(2008, 10, 0, 0, 0, -0.5) - Date.civil(2009,2,27)).should be_close(-414.0, 0.00000001)
   end

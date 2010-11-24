@@ -27,11 +27,11 @@ describe :date_broadcast, :shared => true do
   end
 
   ruby_version_is "1.9" do
-    it "Creates a Date for the monday in the year and week given" do
-      d = Date.send(@method, 2000, 1)
-      d.year.should  == 2000
+    it "Creates a Date for the monday in the year and week given #{@method}" do
+      d = Date.send(@method, 2001, 1)
+      d.year.should  == 2001
       d.month.should == 1
-      d.day.should   == 3
+      d.day.should   == 1
       d.bwday.should == 1
     end
   end
@@ -47,11 +47,11 @@ describe :date_broadcast, :shared => true do
   end
 
   it "raises errors for invalid dates" do
-    lambda { Date.send(@method, 2004, 53, 1) }.should_not raise_error(ArgumentError)
-    lambda { Date.send(@method, 2004, 53, 0) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2004, 53, 8) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2004, 54, 1) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2004,  0, 1) }.should raise_error(ArgumentError)
+    lambda { Date.send(@method, 2006, 53, 1) }.should_not raise_error(ArgumentError)
+    lambda { Date.send(@method, 2006, 53, 0) }.should raise_error(ArgumentError)
+    lambda { Date.send(@method, 2006, 53, 8) }.should raise_error(ArgumentError)
+    lambda { Date.send(@method, 2006, 54, 1) }.should raise_error(ArgumentError)
+    lambda { Date.send(@method, 2006,  0, 1) }.should raise_error(ArgumentError)
 
     lambda { Date.send(@method, 2003, 52, 1) }.should_not raise_error(ArgumentError)
     lambda { Date.send(@method, 2003, 53, 1) }.should raise_error(ArgumentError)

@@ -104,9 +104,6 @@ so that no calculations can overflow.
 #define RHRR_CWYEAR_SET 0x200
 #define RHRR_CWEEK_SET 0x400
 #define RHRR_CWDAY_SET 0x800
-#define RHRR_BWYEAR_SET 0x200
-#define RHRR_BWEEK_SET 0x400
-#define RHRR_BWDAY_SET 0x800
 #define RHRR_SEC_FRACTION_SET 0x1000
 #define RHRR_UNIX_SET 0x2000
 #define RHRR_WNUM0_SET 0x4000
@@ -115,6 +112,9 @@ so that no calculations can overflow.
 #define RHRR_ZONE_SET 0x20000
 #define RHRR_OFFSET_SET 0x40000
 #define RHRR_UNIXM_SET 0x80000
+#define RHRR_BWYEAR_SET 0x100000
+#define RHRR_BWEEK_SET 0x200000
+#define RHRR_BWDAY_SET 0x400000
 
 #define RHR_HAS_JD(d) (((d)->flags & RHR_HAVE_JD) == RHR_HAVE_JD)
 #define RHR_HAS_CIVIL(d) (((d)->flags & RHR_HAVE_CIVIL) == RHR_HAVE_CIVIL)

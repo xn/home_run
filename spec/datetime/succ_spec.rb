@@ -8,6 +8,8 @@ describe "DateTime#succ" do
     ds.succ.should == DateTime.civil(2008, 11, 1)
     ds    = DateTime.commercial(2008, 2, 7)
     ds.succ.should == DateTime.commercial(2008, 3, 1)
+    ds    = DateTime.broadcast(2008, 2, 7)
+    ds.succ.should == DateTime.broadcast(2008, 3, 1)
     ds    = DateTime.jd(2008)
     ds.succ.should == DateTime.jd(2009)
     ds    = DateTime.ordinal(2008, 366)

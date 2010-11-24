@@ -393,7 +393,7 @@ long rhrd__broadcast_to_jd(long bwyear, long bweek, long bwday) {
   n.month = 1;
   n.day = 1;
   rhrd__civil_to_jd(&n);
-  return n.jd - rhrd__mod(n.jd, 7) + 7 + (bwday - 1);
+  return n.jd - rhrd__mod(n.jd, 7) + 7 * (bweek - 1) + (bwday - 1);;
 }
 
 /* Convert the given julian date to a cwday (range: [1-7]). */
@@ -406,7 +406,7 @@ long rhrd__jd_to_cwday(long jd) {
   return day;
 }
 
-/* Convert the given julian date to a cwday (range: [1-7]). */
+/* Convert the given julian date to a bwday (range: [1-7]). */
 long rhrd__jd_to_bwday(long jd) {
   long day;
   day = (jd + 1) % 7;
@@ -442,7 +442,7 @@ void rhrd__fill_commercial(rhrd_t *d) {
   d->day = (unsigned char)rhrd__jd_to_cwday(d->jd);
 }
 
-/* Fill the given rhrd_t with the commercial week
+/* Fill the given rhrd_t with the broadcast week
  * information specified by its julian date.
  * Abuses the year, month, and day fields to store
  * bwyear, bweek, and bwday, so it should not be
@@ -454,11 +454,14 @@ void rhrd__fill_broadcast(rhrd_t *d) {
   memset(&n, 0, sizeof(rhrd_t));
 
   n.jd = d->jd - 3;
+
   rhrd__jd_to_civil(&n);
   a = n.year;
+  
   d->year = d->jd >= rhrd__broadcast_to_jd(a + 1, 1, 1) ? a + 1 : a;
-  d->month = (unsigned char)(1 + (d->jd - rhrd__broadcast_to_jd(d->year, 1, 1)) / 7);
-  d->day = (unsigned char)rhrd__jd_to_bwday(d->jd);
+  d->month = (1 + (d->jd - rhrd__broadcast_to_jd(d->year, 1, 1)) / 7);
+  d->day = rhrd__jd_to_bwday(d->jd);
+
 }
 
 /* Fill in the jd field for the given rhrd_t using the cwyear, cweek,
@@ -535,6 +538,7 @@ int rhrd__valid_broadcast(rhrd_t *d, long bwyear, long bweek, long bwday, int ov
 
   n.jd = rhrd__broadcast_to_jd(bwyear, bweek, bwday);
   rhrd__fill_broadcast(&n);
+
   if(bwyear != n.year || bweek != n.month || bwday != n.day) {
     return 0;
   }
